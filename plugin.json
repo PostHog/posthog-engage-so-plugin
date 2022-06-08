@@ -1,0 +1,27 @@
+{
+    "name": "Engage",
+    "url": "<repo_url>",
+    "description": "Connect your posthog to Engage",
+    "main": "index.js",
+    "config": [
+      {
+        "markdown": ""
+      },
+      {
+        "key": "publicKey",
+        "name": "public_key",
+        "type": "string",
+        "default": "",
+        "hint": "Get the public key from your engage dashboard",
+        "required": true,
+        "secret": true
+      },
+      {
+        "name": "secret",
+        "type": "string",
+        "default": "",
+        "required": false,
+        "secret": true
+      }
+    ]
+  }
