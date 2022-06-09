@@ -1,12 +1,10 @@
 import fetch from "node-fetch";
-const { Buffer } = require('buffer').Buffer;
 
-
-const engageUrl = 'https://'
+const engageUrl = 'https://us-central1-engage-dev-300709.cloudfunctions.net/posthog-integration'
 
 
 async function onEvent (_event, { config }) {
-    if(_event.event.startWith('$')){
+    if(_event.event.startsWith('$')){
         if(_event.event !== '$identify'){
             // we only process custom events and $identify event
             return
@@ -18,7 +16,7 @@ async function onEvent (_event, { config }) {
   
     fetch(engageUrl, {
         method: 'post',
-        body: JSON.stringify(eventBody),
+        body: eventBody,
         headers: {
             'Content-Type': 'application/json',
             Authorization: auth

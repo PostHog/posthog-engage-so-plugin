@@ -17,6 +17,7 @@
         "secret": true
       },
       {
+        "key":"secret",
         "name": "secret",
         "type": "string",
         "default": "",
