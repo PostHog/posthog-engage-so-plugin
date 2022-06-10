@@ -91,6 +91,9 @@ async function onEvent (_event, { config }) {
       return
     }
   }
+  if (_event.event.startsWith('plugin')) {
+    return
+  }
   // define the auth for the api connection
   const auth = 'Basic ' + Buffer.from(`${config.publicKey}:${config.secret}`).toString('base64')
 
