@@ -17,7 +17,8 @@
         "secret": true
       },
       {
-        "name": "secret",
+        "key": "secret",
+        "name":"secret",
         "type": "string",
         "default": "",
         "hint": "Get the secret key from your engage dashboard",
