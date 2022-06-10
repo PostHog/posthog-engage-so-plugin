@@ -85,7 +85,7 @@ function formatEventProperty (data) {
 }
 
 async function onEvent (_event, { config }) {
-  if (_event.event.startWith('$')) {
+  if (_event.event.startsWith('$')) {
     if (_event.event !== '$identify') {
       // only process custom events and $identify event
       return
