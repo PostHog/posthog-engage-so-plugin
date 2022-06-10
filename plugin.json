@@ -20,7 +20,8 @@
         "name": "secret",
         "type": "string",
         "default": "",
-        "required": false,
+        "hint": "Get the secret key from your engage dashboard",
+        "required": true,
         "secret": true
       }
     ]

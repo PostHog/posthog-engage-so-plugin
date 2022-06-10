@@ -4,7 +4,17 @@
   "description": "An app to integrate posthog and engage",
   "main": "index.js",
   "license": "MIT",
+  "scripts": {
+    "lint": "standard --fix && git add ."
+  },
+  "pre-commit": {
+    "run": "lint"
+  },
   "dependencies": {
     "node-fetch": "^3.2.5"
+  },
+  "devDependencies": {
+    "pre-commit": "^1.2.2",
+    "standard": "^17.0.0"
   }
 }
