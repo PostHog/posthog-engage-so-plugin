@@ -5,7 +5,7 @@ Once installed it sends your custom events to engage using your config variables
 
 ## Tracked Events
 
-The app only tracks your **Customer Events** and your **$identify** events
+The app only tracks your **Custom** and **$identify** events
 
 ### Setup
 During installation, you will provide your engage secret key and public key
@@ -18,7 +18,8 @@ Once setup is complete your events would be sent to engage.so
 ### Events
 The app also processes and sends extra properties or meta-data of the events to engage.so eg.
 
-```posthog.identify(
+```
+posthog.identify(
     '[user unique id]', // distinct_id, required
     { userProperty: 'value1' }, // $set, optional
     { anotherUserProperty: 'value2' } // $set_once, optional
