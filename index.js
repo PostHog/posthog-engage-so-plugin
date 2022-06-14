@@ -10,9 +10,9 @@ function cleanUserEvent (eventDetails) {
     refinedEvent[param] = $setParameters[param]
   }
   if (eventDetails.event === '$identify') {
-    if (eventDetails.properties.$device_id) {
+    if (eventDetails.properties.$device_id && (eventDetails.properties.$device_type.toLowerCase() === 'android' || eventDetails.properties.$device_type.toLowerCase() === 'ios')) {
       refinedEvent.device_token = eventDetails.properties.$device_id
-      refinedEvent.device_platform = `${eventDetails.properties.$os || ''} ${eventDetails.properties.$device_type || ''} ${eventDetails.properties.$browser || ''}`
+      refinedEvent.device_platform = `${eventDetails.properties.$os || ''} ${eventDetails.properties.$device_type || ''}`
     }
     return refinedEvent
   }
@@ -91,6 +91,7 @@ async function onEvent (_event, { config }) {
       return
     }
   }
+  // Ignore plugin events
   if (_event.event.startsWith('plugin')) {
     return
   }
