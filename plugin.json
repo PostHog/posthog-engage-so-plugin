@@ -1,7 +1,7 @@
 {
     "name": "Engage",
     "url": "https://github.com/engage-so/posthog-plugin",
-    "description": "Connect your posthog to Engage",
+    "description": "Engage + Posthog Integration",
     "main": "index.js",
     "config": [
       {
