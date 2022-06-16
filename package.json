@@ -5,16 +5,21 @@
   "main": "index.js",
   "license": "MIT",
   "scripts": {
-    "lint": "standard --fix && git add ."
+    "lint": "standard --fix",
+    "test": "jest"
   },
   "pre-commit": {
     "run": "lint"
   },
-  "dependencies": {
-    "node-fetch": "^3.2.5"
-  },
   "devDependencies": {
+    "@posthog/plugin-scaffold": "^1.0.4",
+    "jest": "^28.1.1",
     "pre-commit": "^1.2.2",
     "standard": "^17.0.0"
+  },
+  "standard": {
+    "ignore": [
+      "test"
+    ]
   }
 }

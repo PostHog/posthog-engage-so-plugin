@@ -1,5 +1,3 @@
-import fetch from 'node-fetch'
-
 function cleanUserEvent (eventDetails) {
   const refinedEvent = {}
   const $setParameters = Object.assign({}, eventDetails.properties.$set, eventDetails.properties.$set_once)
