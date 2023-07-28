@@ -1,20 +1,41 @@
-function cleanUserEvent (eventDetails) {
-  const refinedEvent = {}
-  const $setParameters = Object.assign({}, eventDetails.properties.$set, eventDetails.properties.$set_once)
-  for (const param in $setParameters) {
-    if (param.startsWith('$')) {
+const ignorePpties = ['gclid', 'distinct_id', 'token', 'msclkid']
+
+function filterPpties (ppties) {
+  const params = {}
+  for (const param in ppties) {
+    if (param.startsWith('$') || ignorePpties.includes(param)) {
       continue
     }
-    refinedEvent[param] = $setParameters[param]
+    params[param] = ppties[param]
   }
-  if (eventDetails.event === '$identify') {
+  return params
+}
+
+function cleanProperties (eventDetails) {
+  const refinedSet = {}
+  // Track device token + platform
+  if (['$identify', '$groupidentify'].includes(eventDetails.event)) {
     if (eventDetails.properties.$device_id && (eventDetails.properties.$device_type.toLowerCase() === 'android' || eventDetails.properties.$device_type.toLowerCase() === 'ios')) {
-      refinedEvent.device_token = eventDetails.properties.$device_id
-      refinedEvent.device_platform = `${eventDetails.properties.$os || ''} ${eventDetails.properties.$device_type || ''}`
+      refinedSet.device_token = eventDetails.properties.$device_id
+      refinedSet.device_platform = `${eventDetails.properties.$os || ''} ${eventDetails.properties.$device_type || ''}`
     }
-    return refinedEvent
   }
-  return refinedEvent
+  const $setParameters = {}
+  const $gsetParameters = {}
+  Object.assign($setParameters, filterPpties(Object.assign(refinedSet, eventDetails.properties.$set, eventDetails.properties.$set_once)))
+  if (eventDetails.event === '$identify') {
+    return { set: $setParameters, ppties: {}, gset: {} }
+  }
+  Object.assign($gsetParameters, filterPpties(Object.assign(refinedSet, eventDetails.properties.$group_set, { is_account: true })))
+  if (eventDetails.event === '$groupidentify') {
+    return { set: {}, ppties: {}, gset: $gsetParameters }
+  }
+
+  const refinedPpties = {}
+  if (eventDetails.properties && Object.keys(eventDetails.properties).length) {
+    Object.assign(refinedPpties, filterPpties(eventDetails.properties))
+  }
+  return { set: $setParameters, ppties: refinedPpties, gset: $gsetParameters }
 }
 
 function formatUserObject (data) {
@@ -37,6 +58,10 @@ function formatUserObject (data) {
   if (data.number) {
     o.number = data.number
     delete data.number
+  }
+  if (data.is_account) {
+    o.is_account = true
+    delete data.is_account
   }
   if (data.created_at) {
     o.date = new Date(data.created_at)
@@ -70,10 +95,10 @@ function formatUserObject (data) {
 
 function formatEventProperty (data) {
   const o = {}
-  if ('value' in data) {
-    o.value = data.value
-    delete data.value
-  }
+  // if ('value' in data) {
+  //   o.value = data.value
+  //   delete data.value
+  // }
   // flatten everything remaining as property
   o.properties = Object.assign({}, ...(function _flatten (o) { return [].concat(...Object.keys(o).map(k => typeof o[k] === 'object' ? _flatten(o[k]) : ({ [k]: o[k] }))) }(data)))
   if (!Object.keys(o.properties).length) {
@@ -83,28 +108,41 @@ function formatEventProperty (data) {
 }
 
 async function onEvent (_event, { config }) {
-  if (_event.event.startsWith('$')) {
-    if (_event.event !== '$identify') {
-      // only process custom events and $identify event
+  const event = _event.event
+  if (event.startsWith('$')) {
+    if (!['$identify', '$groupidentify'].includes(event)) {
+      // only process custom events, $groupidentify and $identify
       return
     }
   }
   // Ignore plugin events
-  if (_event.event.startsWith('plugin')) {
+  if (event.startsWith('plugin')) {
     return
   }
   // define the auth for the api connection
   const auth = 'Basic ' + Buffer.from(`${config.publicKey}:${config.secret}`).toString('base64')
 
   // user id
-  const uid = _event.distinct_id
+  let uid = _event.distinct_id
+  if (event === '$groupidentify') {
+    if (_event.properties && _event.properties.$group_key) {
+      uid = _event.properties.$group_key
+    } else {
+      // Group key is important when identifying groups
+      // Distinct id doesnt count
+      return
+    }
+  }
 
-  if (_event.event === '$identify') {
-    const cleanEventData = cleanUserEvent(_event)
-    const requestBody = formatUserObject(JSON.parse(JSON.stringify(cleanEventData)))
+  // if event is not identify then track
+  const ppties = cleanProperties(_event)
+
+  if (['$identify', '$groupidentify'].includes(event)) {
+    const o = event === '$identify' ? ppties.set : ppties.gset
+    const requestBody = formatUserObject(JSON.parse(JSON.stringify(o)))
 
     fetch(`https://api.engage.so/v1/users/${uid}`, {
-      method: 'put',
+      method: 'PUT',
       body: JSON.stringify(requestBody),
       headers: {
         'Content-Type': 'application/json',
@@ -116,20 +154,42 @@ async function onEvent (_event, { config }) {
     return
   }
 
-  // if event is not identify then track
-  const event = _event.event
-  const cleanEventData = cleanUserEvent(_event)
-  const requestBody = formatEventProperty(JSON.parse(JSON.stringify(cleanEventData)))
+  // Do we need to update a user parameter?
+  if (ppties.set && Object.keys(ppties.set).length && _event.distinct_id) {
+    const requestBody = formatUserObject(JSON.parse(JSON.stringify(ppties.set)))
+    fetch(`https://api.engage.so/v1/users/${_event.distinct_id}`, {
+      method: 'PUT',
+      body: JSON.stringify(requestBody),
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: auth
+      }
+    })
+      .then(() => Promise.resolve())
+      .catch(() => {})
+  }
+  const requestBody = formatEventProperty(JSON.parse(JSON.stringify(ppties.ppties)))
   requestBody.event = event
 
-  fetch(`https://api.engage.so/v1/users/${uid}/events`, {
-    method: 'post',
-    body: JSON.stringify(requestBody),
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: auth
-    }
-  }).then(() => Promise.resolve())
+  let uids = []
+  // If tracking for a group, ids are in .property.$groups
+  if (_event.properties && _event.properties.$groups) {
+    uids = Object.values(_event.properties.$groups)
+  } else {
+    uids.push(uid)
+  }
+
+  Promise.all(uids.map(uid => {
+    return fetch(`https://api.engage.so/v1/users/${uid}/events`, {
+      method: 'POST',
+      body: JSON.stringify(requestBody),
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: auth
+      }
+    })
+  }))
+    .then(() => Promise.resolve())
     .catch(() => {})
 }
 
