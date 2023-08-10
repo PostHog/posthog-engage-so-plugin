@@ -1,16 +1,16 @@
 # POSTHOG ENGAGE APP
 
-The Engage Posthog plugin processes and sends customer data and events identified and tracked through Posthog to [Engage](https://engage.so). You can then use the data for customer segmentation, targeted campaigns and automation.
+The Engage PostHog plugin processes and sends customer data and events identified and tracked through Posthog to [Engage](https://engage.so). You can then use the data for customer segmentation, targeted campaigns and automation.
 
 ## Tracked Events
 
-The plugin only tracks your **Custom** and **$identify** events.
+The plugin only tracks your **Custom**, **$identify** and **$groupidentify** events. Browser events like button clicks, pageviews are silently ignored.
 
 ## Setup
 
-During installation, you will provide your Engage secret key and public key. These are available on the account settings page of your Engage dashboard (Settings -> Account -> API keys). This is used to send your Posthog events to Engage.
+During installation, you will provide your Engage secret key and public key. These are available on the account settings page of your Engage dashboard (Settings -> Account -> API keys). This is used to send your PostHog events to Engage.
 
-Once setup is complete, Posthog will start sending your events to Engage and they will be available on your Engage account.
+Once setup is complete, PostHog will start sending your events to Engage and they will be available on your Engage account.
 
 ## Event properties
 
@@ -24,4 +24,4 @@ posthog.identify(
 );
 ```
 
-The example above using the Posthog JS SDK appends extra properties to the identify event. These extra properties will be sent as well to Engage.
+The example above using the PostHog JS SDK appends extra properties to the identify event. These extra properties will be sent as well to Engage.
