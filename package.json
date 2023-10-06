@@ -1,6 +1,6 @@
 {
   "name": "posthog-plugin",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "Send user and group attributes and events from PostHog to Engage for personalized customer engagement.",
   "main": "index.js",
   "license": "MIT",

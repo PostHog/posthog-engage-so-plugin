@@ -18,9 +18,12 @@ function cleanProperties (eventDetails) {
   }
   // Track device token + platform
   if (['$identify', '$groupidentify'].includes(eventDetails.event)) {
-    if (eventDetails.properties.$device_id && eventDetails.properties.$device_type && ['android', 'ios'].includes(eventDetails.properties.$device_type.toLowerCase())) {
-      refinedSet.device_token = eventDetails.properties.$device_id
-      refinedSet.device_platform = `${eventDetails.properties.$os || ''} ${eventDetails.properties.$device_type || ''}`
+    if (eventDetails.properties.$device_id || eventDetails.$device_id) {
+      const platform = eventDetails.properties.$os || eventDetails.$os
+      if (platform && ['android', 'ios'].includes(platform.toLowerCase())) {
+        refinedSet.device_token = eventDetails.properties.$device_id
+        refinedSet.device_platform = platform.toLowerCase()
+      }
     }
   }
   const $setParameters = {}
