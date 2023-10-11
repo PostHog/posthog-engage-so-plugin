@@ -13,16 +13,22 @@ function filterPpties (ppties) {
 
 function cleanProperties (eventDetails) {
   const refinedSet = {}
+  if (!eventDetails.properties) {
+    eventDetails.properties = {}
+  }
   // Track device token + platform
   if (['$identify', '$groupidentify'].includes(eventDetails.event)) {
-    if (eventDetails.properties.$device_id && (eventDetails.properties.$device_type.toLowerCase() === 'android' || eventDetails.properties.$device_type.toLowerCase() === 'ios')) {
-      refinedSet.device_token = eventDetails.properties.$device_id
-      refinedSet.device_platform = `${eventDetails.properties.$os || ''} ${eventDetails.properties.$device_type || ''}`
+    if (eventDetails.properties.$device_id || eventDetails.$device_id) {
+      const platform = eventDetails.properties.$os || eventDetails.$os
+      if (platform && ['android', 'ios'].includes(platform.toLowerCase())) {
+        refinedSet.device_token = eventDetails.properties.$device_id
+        refinedSet.device_platform = platform.toLowerCase()
+      }
     }
   }
   const $setParameters = {}
   const $gsetParameters = {}
-  Object.assign($setParameters, filterPpties(Object.assign(refinedSet, eventDetails.properties.$set, eventDetails.properties.$set_once)))
+  Object.assign($setParameters, filterPpties(Object.assign(refinedSet, eventDetails.properties.$set, eventDetails.properties.$set_once, eventDetails.$set_once, eventDetails.$set)))
   if (eventDetails.event === '$identify') {
     return { set: $setParameters, ppties: {}, gset: {} }
   }
@@ -89,6 +95,8 @@ function formatUserObject (data) {
   if (!Object.keys(o.meta).length) {
     delete o.meta
   }
+
+  o.source = 'PostHog'
 
   return o
 }
