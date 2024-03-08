@@ -1,5 +1,10 @@
 const { getMeta, createEvent, resetMeta } = require('@posthog/plugin-scaffold/test/utils')
 const { onEvent } = require('../index')
+const config = {
+  publicKey: 'ENGAGE_PUBLIC_KEY',
+  secret: 'ENGAGE_SEECRET',
+  filter: 'Send events for all users'
+}
 
 global.fetch = jest.fn(async (url) => ({
   json: {},
@@ -9,19 +14,12 @@ global.fetch = jest.fn(async (url) => ({
 beforeEach(() => {
   fetch.mockClear()
   resetMeta({
-    config: {
-      publicKey: 'ENGAGE_PUBLIC_KEY',
-      secret: 'ENGAGE_SEECRET'
-    },
+    config,
     global
   })
 })
 
 test('onEvent to send the correct data for $identify event (user)', async () => {
-  const config = {
-    publicKey: 'ENGAGE_PUBLIC_KEY',
-    secret: 'ENGAGE_SEECRET'
-  }
   resetMeta({
     config
   })
@@ -56,16 +54,13 @@ test('onEvent to send the correct data for $identify event (user)', async () => 
       last_name: '01',
       meta: {
         plan: 'Pro'
-      }
+      },
+      source: 'PostHog'
     })
   })
 })
 
 test('onEvent to send the correct data for $identify event (group)', async () => {
-  const config = {
-    publicKey: 'ENGAGE_PUBLIC_KEY',
-    secret: 'ENGAGE_SEECRET'
-  }
   resetMeta({
     config
   })
@@ -93,16 +88,13 @@ test('onEvent to send the correct data for $identify event (group)', async () =>
     },
     body: JSON.stringify({
       is_account: true,
-      first_name: 'Group'
+      first_name: 'Group',
+      source: 'PostHog'
     })
   })
 })
 
 test('onEvent to send the correct data to track user event', async () => {
-  const config = {
-    publicKey: 'ENGAGE_PUBLIC_KEY',
-    secret: 'ENGAGE_SEECRET'
-  }
   resetMeta({
     config
   })
@@ -133,7 +125,8 @@ test('onEvent to send the correct data to track user event', async () => {
       number: '08012345678',
       meta: {
         currency: 'NG'
-      }
+      },
+      source: 'PostHog'
     })
   })
   expect(fetch).toHaveBeenCalledWith('https://api.engage.so/v1/users/user01/events', {
@@ -147,16 +140,13 @@ test('onEvent to send the correct data to track user event', async () => {
         prop1: 'val1',
         prop2: 'val2'
       },
+      source: 'PostHog',
       event: 'newEvent'
     })
   })
 })
 
 test('onEvent to send the correct data to track group event', async () => {
-  const config = {
-    publicKey: 'ENGAGE_PUBLIC_KEY',
-    secret: 'ENGAGE_SEECRET'
-  }
   resetMeta({
     config
   })
@@ -187,6 +177,7 @@ test('onEvent to send the correct data to track group event', async () => {
         prop1: 'val1',
         prop2: 'val2'
       },
+      source: 'PostHog',
       event: 'Played movie'
     })
   })

@@ -1,4 +1,12 @@
 const ignorePpties = ['gclid', 'distinct_id', 'token', 'msclkid']
+const eventMap = {
+  ALL: 1,
+  IDENTIFIED: 2
+}
+const eventOptions = {
+  'Send events for all users': eventMap.ALL,
+  'Only send events for identified users': eventMap.IDENTIFIED
+}
 
 function filterPpties (ppties) {
   const params = {}
@@ -112,6 +120,7 @@ function formatEventProperty (data) {
   if (!Object.keys(o.properties).length) {
     delete o.properties
   }
+  o.source = 'PostHog'
   return o
 }
 
@@ -184,6 +193,23 @@ async function onEvent (_event, { config }) {
   if (_event.properties && _event.properties.$groups) {
     uids = Object.values(_event.properties.$groups)
   } else {
+    // Check if exists
+    if (config.filter && eventOptions[config.filter] === eventMap.IDENTIFIED) {
+      try {
+        const r = fetch(`https://api.engage.so/v1/users/${uid}`, {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: auth
+          }
+        })
+        const body = await r.json()
+        if (body.error) {
+          return
+        }
+      } catch (e) {
+        return
+      }
+    }
     uids.push(uid)
   }
 
