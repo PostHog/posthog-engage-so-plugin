@@ -1,30 +1,18 @@
-const { getMeta, createEvent, resetMeta } = require('@posthog/plugin-scaffold/test/utils')
-const { onEvent } = require('../index')
-
-global.fetch = jest.fn(async (url) => ({
-  json: {},
-  status: 200
-}))
+const { getMeta, resetMeta } = require('@posthog/plugin-scaffold/test/utils')
+const { composeWebhook } = require('../index')
+const config = {
+  publicKey: 'ENGAGE_PUBLIC_KEY',
+  secret: 'ENGAGE_SEECRET',
+  filter: 'Send events for all users'
+}
 
 beforeEach(() => {
-  fetch.mockClear()
-  resetMeta({
-    config: {
-      publicKey: 'ENGAGE_PUBLIC_KEY',
-      secret: 'ENGAGE_SEECRET'
-    },
-    global
-  })
-})
-
-test('onEvent to send the correct data for $identify event (user)', async () => {
-  const config = {
-    publicKey: 'ENGAGE_PUBLIC_KEY',
-    secret: 'ENGAGE_SEECRET'
-  }
   resetMeta({
     config
   })
+})
+
+test('composeWebhook to send the correct data for $identify event (user)', async () => {
   const auth = 'Basic ' + Buffer.from(`${config.publicKey}:${config.secret}`).toString('base64')
 
   const event = {
@@ -42,33 +30,22 @@ test('onEvent to send the correct data for $identify event (user)', async () => 
       distinct_id: '[distinct_id]'
     }
   }
-  expect(fetch).toHaveBeenCalledTimes(0)
-  await onEvent(event, getMeta())
-  expect(fetch).toHaveBeenCalledTimes(1)
-  expect(fetch).toHaveBeenCalledWith('https://api.engage.so/v1/users/user01', {
-    method: 'PUT',
-    headers: {
-      Authorization: auth,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      first_name: 'User',
-      last_name: '01',
-      meta: {
-        plan: 'Pro'
-      }
+
+  const response = await composeWebhook(event, getMeta())
+  expect(response).toEqual(
+    expect.objectContaining({
+      url: 'https://api.engage.so/posthog',
+      body: JSON.stringify(event),
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: auth
+      },
+      method: 'POST'
     })
-  })
+  )
 })
 
-test('onEvent to send the correct data for $identify event (group)', async () => {
-  const config = {
-    publicKey: 'ENGAGE_PUBLIC_KEY',
-    secret: 'ENGAGE_SEECRET'
-  }
-  resetMeta({
-    config
-  })
+test('composeWebhook to send the correct data for $identify event (group)', async () => {
   const auth = 'Basic ' + Buffer.from(`${config.publicKey}:${config.secret}`).toString('base64')
 
   const event = {
@@ -82,30 +59,22 @@ test('onEvent to send the correct data for $identify event (group)', async () =>
       }
     }
   }
-  expect(fetch).toHaveBeenCalledTimes(0)
-  await onEvent(event, getMeta())
-  expect(fetch).toHaveBeenCalledTimes(1)
-  expect(fetch).toHaveBeenCalledWith('https://api.engage.so/v1/users/group123', {
-    method: 'PUT',
-    headers: {
-      Authorization: auth,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      is_account: true,
-      first_name: 'Group'
+
+  const response = await composeWebhook(event, getMeta())
+  expect(response).toEqual(
+    expect.objectContaining({
+      url: 'https://api.engage.so/posthog',
+      body: JSON.stringify(event),
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: auth
+      },
+      method: 'POST'
     })
-  })
+  )
 })
 
-test('onEvent to send the correct data to track user event', async () => {
-  const config = {
-    publicKey: 'ENGAGE_PUBLIC_KEY',
-    secret: 'ENGAGE_SEECRET'
-  }
-  resetMeta({
-    config
-  })
+test('composeWebhook to send the correct data to track user event', async () => {
   const auth = 'Basic ' + Buffer.from(`${config.publicKey}:${config.secret}`).toString('base64')
 
   const event = {
@@ -120,46 +89,22 @@ test('onEvent to send the correct data to track user event', async () => {
       prop2: 'val2'
     }
   }
-  expect(fetch).toHaveBeenCalledTimes(0)
-  await onEvent(event, getMeta())
-  expect(fetch).toHaveBeenCalledTimes(2)
-  expect(fetch).toHaveBeenCalledWith('https://api.engage.so/v1/users/user01', {
-    method: 'PUT',
-    headers: {
-      Authorization: auth,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      number: '08012345678',
-      meta: {
-        currency: 'NG'
-      }
-    })
-  })
-  expect(fetch).toHaveBeenCalledWith('https://api.engage.so/v1/users/user01/events', {
-    method: 'POST',
-    headers: {
-      Authorization: auth,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      properties: {
-        prop1: 'val1',
-        prop2: 'val2'
+
+  const response = await composeWebhook(event, getMeta())
+  expect(response).toEqual(
+    expect.objectContaining({
+      url: 'https://api.engage.so/posthog',
+      body: JSON.stringify(event),
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: auth
       },
-      event: 'newEvent'
+      method: 'POST'
     })
-  })
+  )
 })
 
-test('onEvent to send the correct data to track group event', async () => {
-  const config = {
-    publicKey: 'ENGAGE_PUBLIC_KEY',
-    secret: 'ENGAGE_SEECRET'
-  }
-  resetMeta({
-    config
-  })
+test('composeWebhook to send the correct data to track group event', async () => {
   const auth = 'Basic ' + Buffer.from(`${config.publicKey}:${config.secret}`).toString('base64')
 
   const event = {
@@ -173,21 +118,51 @@ test('onEvent to send the correct data to track group event', async () => {
       prop2: 'val2'
     }
   }
-  expect(fetch).toHaveBeenCalledTimes(0)
-  await onEvent(event, getMeta())
-  expect(fetch).toHaveBeenCalledTimes(1)
-  expect(fetch).toHaveBeenCalledWith('https://api.engage.so/v1/users/group123/events', {
-    method: 'POST',
-    headers: {
-      Authorization: auth,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      properties: {
-        prop1: 'val1',
-        prop2: 'val2'
+
+  const response = await composeWebhook(event, getMeta())
+  expect(response).toEqual(
+    expect.objectContaining({
+      url: 'https://api.engage.so/posthog',
+      body: JSON.stringify(event),
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: auth
       },
-      event: 'Played movie'
+      method: 'POST'
     })
-  })
+  )
+})
+
+test('composeWebhook should not track non-custom events besides $identify and $groupidentify', async () => {
+  const auth = 'Basic ' + Buffer.from(`${config.publicKey}:${config.secret}`).toString('base64')
+
+  const event = {
+    event: '$pageview',
+    properties: {
+      $os: 'Mac OS X',
+      $lib: 'web',
+      $host: 'localhost:8000',
+      $time: 1606383312.494,
+      token: 'mre13a_SMBv9EwHAtdtTyutyy6AfO00OTPwaalaHPGgKLS',
+      $browser: 'Chrome',
+      $user_id: '3erf45reXthrGser675waeHFAsbv4AsadfR',
+      $pathname: '/instance/status',
+      $device_id: '17554768afe5cb-0fc915d2a583cf-166f6152-1ea000-175543686ffdc5',
+      $insert_id: 'hgu2p36uvlc1b9dg',
+      distinct_id: 'scbbAqF7uyrMmamV4QBzcA1rrm9wHNISdFweZz-mQ0',
+      $current_url: 'http://localhost:8000/instance/status',
+      $lib_version: '1.7.0-beta.1',
+      $screen_width: 1790,
+      $screen_height: 1120,
+      posthog_version: '1.17.0',
+      $browser_version: 86,
+      $initial_referrer: '$direct',
+      has_slack_webhook: false,
+      $active_feature_flags: ['navigation-1775', 'session-recording-player'],
+      $initial_referring_domain: '$direct'
+    }
+  }
+
+  const response = await composeWebhook(event, getMeta())
+  expect(response).toBe(null)
 })
