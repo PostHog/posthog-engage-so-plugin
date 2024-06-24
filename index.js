@@ -1,8 +1,8 @@
 function composeWebhook (_event, { config }) {
   const event = _event.event
   if (event.startsWith('$')) {
-    if (!['$identify', '$groupidentify'].includes(event)) {
-      // only process custom events, $groupidentify and $identify
+    // only process a specific set of custom events
+    if (!['$identify', '$groupidentify', '$set', '$unset', '$create_alias'].includes(event)) {
       return null
     }
   }
